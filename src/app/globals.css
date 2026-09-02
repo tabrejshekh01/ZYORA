@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-ivory-100 text-onyx-900 antialiased font-sans overflow-x-hidden selection:bg-gold-500 selection:text-white;
+  }
+
+  /* Custom luxury light scrollbar */
+  ::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #faf9f6;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #d5ceb8;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #c5a059;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-xl border border-stone-200/80 shadow-xl shadow-stone-200/40;
+  }
+
+  .gold-gradient-text {
+    @apply bg-gradient-to-r from-gold-600 via-gold-400 to-gold-700 bg-clip-text text-transparent;
+  }
+}

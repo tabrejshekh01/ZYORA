@@ -1,0 +1,388 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CUSTOMER
+  SELLER
+  ADMIN
+}
+
+enum StoreStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ProductStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum PaymentGateway {
+  RAZORPAY
+  STRIPE
+  UPI
+  CARD
+  COD
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  TRANSFERRED
+  FAILED
+  REVERSED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(CUSTOMER)
+  avatar    String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  store     Store?
+  orders    Order[]
+  reviews   Review[]
+  cart      Cart?
+  wishlist  Wishlist?
+  addresses Address[]
+}
+
+model Store {
+  id                String      @id @default(uuid())
+  userId            String      @unique
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  slug              String      @unique
+  logo              String?
+  banner            String?
+  bio               String?
+  phone             String?
+  address           String?
+  status            StoreStatus @default(APPROVED)
+  rating            Float       @default(4.9)
+  razorpayAccountId String?
+  settlementEnabled Boolean     @default(false)
+  settlementStatus  String      @default("PENDING")
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  products    Product[]
+  orderItems  OrderItem[]
+  inventories Inventory[]
+  settlements SellerSettlement[]
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  image       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  products Product[]
+}
+
+model Product {
+  id            String        @id @default(uuid())
+  title         String
+  slug          String        @unique
+  description   String
+  price         Float
+  discountPrice Float?
+  gender        String        @default("UNISEX") // MEN, WOMEN, UNISEX
+  stock         Int           @default(50)
+  sku           String?
+  isFeatured    Boolean       @default(false)
+  isTrending    Boolean       @default(false)
+  status        ProductStatus @default(PENDING_APPROVAL)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images        ProductImage[]
+  sizes         ProductSize[]
+  colors        ProductColor[]
+  inventories   Inventory[]
+  orderItems    OrderItem[]
+  reviews       Review[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean @default(false)
+  sortOrder Int     @default(0)
+}
+
+model Size {
+  id       String        @id @default(uuid())
+  name     String        @unique // e.g. XS, S, M, L, XL, XXL
+  products ProductSize[]
+}
+
+model Color {
+  id       String         @id @default(uuid())
+  name     String         @unique // e.g. Obsidian Black, Crimson Red, Champagne Gold
+  hexCode  String?
+  products ProductColor[]
+}
+
+model ProductSize {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sizeId    String
+  size      Size    @relation(fields: [sizeId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, sizeId])
+}
+
+model ProductColor {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  colorId   String
+  color     Color   @relation(fields: [colorId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, colorId])
+}
+
+model Inventory {
+  id               String   @id @default(uuid())
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeId          String
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  size             String?
+  color            String?
+  stockQuantity    Int      @default(0)
+  reservedQuantity Int      @default(0)
+  sku              String?  @unique
+  updatedAt        DateTime @updatedAt
+
+  @@unique([productId, size, color])
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id            String   @id @default(uuid())
+  cartId        String
+  cart          Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity      Int      @default(1)
+  size          String?
+  color         String?
+  sellerStoreId String
+  createdAt     DateTime @default(now())
+}
+
+model Wishlist {
+  id        String         @id @default(uuid())
+  userId    String         @unique
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+  updatedAt DateTime       @updatedAt
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String
+  phone     String
+  street    String
+  city      String
+  state     String
+  pincode   String
+  country   String   @default("India")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  orders Order[]
+}
+
+model Order {
+  id              String         @id @default(uuid())
+  orderNumber     String         @unique
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addressId       String?
+  address         Address?       @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  shippingAddress String
+  totalAmount     Float
+  discountAmount  Float          @default(0)
+  paymentMethod   PaymentGateway @default(RAZORPAY)
+  paymentStatus   PaymentStatus  @default(PENDING)
+  orderStatus     OrderStatus    @default(PROCESSING)
+  couponId        String?
+  coupon          Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  // Razorpay & Financial Breakdown Fields
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  zyoraCommission   Float   @default(4.0) // Fixed ₹4 platform commission per successful order
+  sellerGrossTotal  Float   @default(0)
+  razorpayFee       Float   @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items       OrderItem[]
+  payments    Payment[]
+  settlements SellerSettlement[]
+}
+
+model OrderItem {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  sellerStoreId String
+  sellerStore   Store  @relation(fields: [sellerStoreId], references: [id], onDelete: Cascade)
+
+  price     Float
+  quantity  Int
+  size      String?
+  color     String?
+  status    OrderStatus @default(PROCESSING)
+  createdAt DateTime    @default(now())
+}
+
+model Payment {
+  id                String         @id @default(uuid())
+  orderId           String
+  order             Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  gateway           PaymentGateway @default(RAZORPAY)
+  transactionId     String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?        @unique
+  razorpaySignature String?
+  amount            Float
+  fee               Float          @default(0)
+  tax               Float          @default(0)
+  currency          String         @default("INR")
+  status            PaymentStatus  @default(PENDING)
+  payload           String? // JSON string of payment metadata
+  createdAt         DateTime       @default(now())
+}
+
+model SellerSettlement {
+  id                      String           @id @default(uuid())
+  orderId                 String
+  order                   Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sellerStoreId           String
+  sellerStore             Store            @relation(fields: [sellerStoreId], references: [id], onDelete: Cascade)
+  grossAmount             Float
+  zyoraCommission         Float            @default(4.0)
+  razorpayFee             Float            @default(0)
+  sellerNetAmount         Float
+  currency                String           @default("INR")
+  settlementStatus        SettlementStatus @default(PENDING)
+  razorpayLinkedAccountId String?
+  razorpayTransferId      String?
+  settledAt               DateTime?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+}
+
+model WebhookEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  processedAt DateTime @default(now())
+}
+
+model Review {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id             String       @id @default(uuid())
+  code           String       @unique
+  discountType   DiscountType @default(PERCENTAGE)
+  discountValue  Float
+  minOrderAmount Float        @default(0)
+  maxDiscount    Float?
+  expiresAt      DateTime?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  orders Order[]
+}

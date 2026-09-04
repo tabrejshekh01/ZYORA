@@ -3,6 +3,7 @@ import { Playfair_Display, Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
+import ZyoraAiAssistant from '@/components/ai/ZyoraAiAssistant';
 
 const serifFont = Playfair_Display({
   subsets: ['latin'],
@@ -41,6 +42,7 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             {children}
+            <ZyoraAiAssistant />
           </CartProvider>
         </AuthProvider>
       </body>

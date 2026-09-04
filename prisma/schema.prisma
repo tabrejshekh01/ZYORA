@@ -386,3 +386,28 @@ model Coupon {
 
   orders Order[]
 }
+
+model OTPVerification {
+  id          String   @id @default(uuid())
+  identifier  String   // normalized email or phone
+  otpHash     String   // hashed OTP
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+  verified    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([identifier])
+  @@index([expiresAt])
+}
+
+model RateLimit {
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+

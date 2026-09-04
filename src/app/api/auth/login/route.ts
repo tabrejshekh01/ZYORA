@@ -6,24 +6,34 @@ import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
-    // 1. Rate Limiting Protection (Brute Force Defense)
-    const ip = request.headers.get('x-forwarded-for') || 'local';
-    const rateLimit = checkRateLimit(`login_${ip}`, 10, 60);
+    // 1. Rate Limiting Protection (Brute Force Defense by IP)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local';
+    const ipRateLimit = await checkRateLimit(`login_ip_${ip}`, 10, 60);
 
-    if (!rateLimit.success) {
+    if (!ipRateLimit.success) {
       return NextResponse.json(
         { error: 'Too many login attempts. Please wait 1 minute before trying again.' },
         { status: 429 }
       );
     }
 
-    const { email, password } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const { email, password } = body;
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = String(email).toLowerCase().trim();
+
+    // 2. Rate Limiting Protection by Account
+    const accountRateLimit = await checkRateLimit(`login_account_${cleanEmail}`, 5, 60);
+    if (!accountRateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many failed attempts for this account. Please wait 1 minute before retrying.' },
+        { status: 429 }
+      );
+    }
 
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
@@ -31,12 +41,12 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
     const tokenPayload = {

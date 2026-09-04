@@ -1,16 +1,34 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyRazorpaySignature } from '@/lib/razorpay';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local';
+    const ipLimit = await checkRateLimit(`payment_verify_ip_${ip}`, 15, 60);
+    if (!ipLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many verification attempts. Please wait a moment.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
     if (!orderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return NextResponse.json({ error: 'Missing required Razorpay verification payload fields' }, { status: 400 });
+    }
+
+    const orderLimit = await checkRateLimit(`payment_verify_order_${orderId}`, 5, 60);
+    if (!orderLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many verification requests for this order.' },
+        { status: 429 }
+      );
     }
 
     // 1. Verify Razorpay HMAC SHA256 Signature Server-Side

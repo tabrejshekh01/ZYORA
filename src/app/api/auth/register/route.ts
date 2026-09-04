@@ -8,8 +8,8 @@ import { checkRateLimit } from '@/lib/rate-limit';
 export async function POST(request: Request) {
   try {
     // 1. Rate Limiting Protection (Bot registration defense)
-    const ip = request.headers.get('x-forwarded-for') || 'local';
-    const rateLimit = checkRateLimit(`register_${ip}`, 5, 60);
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local';
+    const rateLimit = await checkRateLimit(`register_${ip}`, 5, 60);
 
     if (!rateLimit.success) {
       return NextResponse.json(

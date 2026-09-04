@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromCookies } from '@/lib/auth';
 import { isRazorpayConfigured, getRazorpayClient, getCleanRazorpayKeyId } from '@/lib/razorpay';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,15 @@ export async function POST(request: Request) {
   let currentStep = 'AUTHENTICATION';
 
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local';
+    const ipRateLimit = await checkRateLimit(`create_order_ip_${ip}`, 10, 60);
+    if (!ipRateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many checkout requests. Please wait a moment before trying again.' },
+        { status: 429 }
+      );
+    }
+
     // Step 1: Authentication check
     currentStep = 'AUTHENTICATION';
     const userPayload = getUserFromCookies();
@@ -16,6 +26,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Unauthorized. Please log in to checkout.', step: currentStep },
         { status: 401 }
+      );
+    }
+
+    const userRateLimit = await checkRateLimit(`create_order_user_${userPayload.userId}`, 5, 60);
+    if (!userRateLimit.success) {
+      return NextResponse.json(
+        { error: 'Order limit reached. Please wait 1 minute before creating another order.' },
+        { status: 429 }
       );
     }
 
@@ -254,13 +272,15 @@ export async function POST(request: Request) {
       isConfigured: true,
     });
   } catch (error: any) {
-    console.error(`Error in /api/payments/create-order at step [${currentStep}]:`, error);
-    const safeErrorMessage = error?.message || 'Internal server error';
+    console.error(`[PAYMENT ERROR] Error in /api/payments/create-order at step [${currentStep}]:`, error?.message);
+    const isProd = process.env.NODE_ENV === 'production';
 
     return NextResponse.json(
       {
-        error: `Server Error during ${currentStep}: ${safeErrorMessage}`,
-        step: currentStep,
+        error: isProd
+          ? 'Unable to initiate order at this time. Please try again later.'
+          : `Server Error during ${currentStep}: ${error?.message || 'Unknown error'}`,
+        step: isProd ? undefined : currentStep,
       },
       { status: 500 }
     );

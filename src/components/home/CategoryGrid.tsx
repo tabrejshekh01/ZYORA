@@ -79,12 +79,14 @@ export default function CategoryGrid() {
             >
               <Link
                 href={`/products?category=${cat.slug}`}
-                className="group relative block h-80 rounded-3xl overflow-hidden bg-stone-100 border border-stone-200 shadow-sm transition-all duration-500 hover:border-gold-400 hover:shadow-xl"
+                className="group relative block h-72 sm:h-80 rounded-3xl overflow-hidden bg-stone-100 border border-stone-200 shadow-sm transition-all duration-500 hover:border-gold-400 hover:shadow-xl"
               >
                 {/* Background Image */}
                 <img
                   src={cat.image}
                   alt={cat.name}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 filter brightness-[0.85] group-hover:brightness-[0.9]"
                 />
 

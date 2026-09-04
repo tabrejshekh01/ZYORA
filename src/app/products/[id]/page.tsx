@@ -135,6 +135,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               <img
                 src={selectedImage || images[0]}
                 alt={product.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover object-center filter brightness-[0.98]"
               />
               <span className="absolute top-4 left-4 px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-white/90 border border-gold-200 text-gold-700 backdrop-blur-md shadow-sm">
@@ -144,16 +146,16 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
             {/* Thumbnail Carousel */}
             {images.length > 1 && (
-              <div className="flex space-x-3 overflow-x-auto pb-2">
+              <div className="flex space-x-3 overflow-x-auto no-scrollbar pb-2">
                 {images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(img)}
-                    className={`w-20 h-24 rounded-2xl overflow-hidden border-2 transition ${
+                    className={`w-20 h-24 rounded-2xl overflow-hidden border-2 transition flex-shrink-0 ${
                       selectedImage === img ? 'border-gold-500 scale-95 shadow-md' : 'border-stone-200 opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={`Thumb ${idx}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -294,21 +296,21 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             </div>
 
             {/* Guarantee Grid */}
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-stone-200 text-center text-[11px] text-stone-600">
-              <div className="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-6 border-t border-stone-200 text-center text-[10px] sm:text-[11px] text-stone-600">
+              <div className="p-2.5 sm:p-3.5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
                 <Truck className="w-4 h-4 text-gold-600 mx-auto" />
                 <p className="font-bold text-stone-900">Pan-India</p>
-                <p className="text-[10px] text-stone-500 font-light">Insured express courier</p>
+                <p className="text-[9px] sm:text-[10px] text-stone-500 font-light">Insured express courier</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
+              <div className="p-2.5 sm:p-3.5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
                 <ShieldCheck className="w-4 h-4 text-gold-600 mx-auto" />
                 <p className="font-bold text-stone-900">Authentic</p>
-                <p className="text-[10px] text-stone-500 font-light">Verified atelier</p>
+                <p className="text-[9px] sm:text-[10px] text-stone-500 font-light">Verified atelier</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
+              <div className="p-2.5 sm:p-3.5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
                 <RefreshCw className="w-4 h-4 text-gold-600 mx-auto" />
                 <p className="font-bold text-stone-900">14 Days</p>
-                <p className="text-[10px] text-stone-500 font-light">Easy returns</p>
+                <p className="text-[9px] sm:text-[10px] text-stone-500 font-light">Easy returns</p>
               </div>
             </div>
 

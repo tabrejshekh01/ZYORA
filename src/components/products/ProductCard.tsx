@@ -88,12 +88,16 @@ export default function ProductCard({ product }: ProductCardProps) {
         <img
           src={primaryImage}
           alt={product.title}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 filter brightness-[0.98]"
         />
         {secondaryImage !== primaryImage && (
           <img
             src={secondaryImage}
             alt={`${product.title} hover`}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover object-center absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 filter brightness-[1]"
           />
         )}

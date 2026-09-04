@@ -195,7 +195,7 @@ export default function CheckoutPage() {
             </p>
           </div>
 
-          <div className="p-8 rounded-3xl bg-white border border-stone-200 text-left space-y-6 shadow-xl">
+          <div className="p-5 sm:p-8 rounded-3xl bg-white border border-stone-200 text-left space-y-6 shadow-xl">
             <div className="flex justify-between items-center border-b border-stone-100 pb-4">
               <div>
                 <h3 className="font-serif text-lg font-bold text-stone-900">Zyora Atelier Invoice (India)</h3>
@@ -237,12 +237,12 @@ export default function CheckoutPage() {
     <main className="min-h-screen bg-ivory-100 text-stone-900">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="mb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+        <div className="mb-10 sm:mb-12">
           <span className="text-xs font-mono uppercase tracking-[0.3em] text-gold-700 font-bold">
             Razorpay Secure Checkout • India (₹)
           </span>
-          <h1 className="font-serif text-4xl font-bold text-stone-900 tracking-tight mt-1">
+          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight mt-1">
             Checkout & Payment Verification
           </h1>
         </div>
@@ -272,10 +272,10 @@ export default function CheckoutPage() {
             </Link>
           </div>
         ) : (
-          <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Shipping Form */}
             <div className="lg:col-span-2 space-y-8">
-              <div className="p-8 rounded-3xl bg-white border border-stone-200 space-y-6 shadow-sm">
+              <div className="p-5 sm:p-8 rounded-3xl bg-white border border-stone-200 space-y-6 shadow-sm">
                 <div className="flex items-center space-x-2 border-b border-stone-100 pb-4">
                   <ShieldCheck className="w-5 h-5 text-gold-600" />
                   <h2 className="font-serif text-xl font-bold text-stone-900">1. Shipping Address</h2>
@@ -359,7 +359,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Razorpay Gateway Info */}
-              <div className="p-8 rounded-3xl bg-white border border-stone-200 space-y-4 shadow-sm">
+              <div className="p-5 sm:p-8 rounded-3xl bg-white border border-stone-200 space-y-4 shadow-sm">
                 <div className="flex items-center space-x-2 border-b border-stone-100 pb-4">
                   <CreditCard className="w-5 h-5 text-gold-600" />
                   <h2 className="font-serif text-xl font-bold text-stone-900">2. Razorpay Secure Payment Methods</h2>
@@ -370,7 +370,7 @@ export default function CheckoutPage() {
                   all Indian payment methods:
                 </p>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs font-mono font-bold text-stone-700">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-center text-xs font-mono font-bold text-stone-700">
                   <div className="p-3 rounded-2xl bg-ivory-200 border border-stone-200">UPI / GPay / PhonePe</div>
                   <div className="p-3 rounded-2xl bg-ivory-200 border border-stone-200">Debit / Credit Card</div>
                   <div className="p-3 rounded-2xl bg-ivory-200 border border-stone-200">Net Banking</div>
@@ -386,7 +386,7 @@ export default function CheckoutPage() {
 
             {/* Order Summary Sidebar */}
             <div className="lg:col-span-1">
-              <div className="p-8 rounded-3xl bg-white border border-stone-200 space-y-6 sticky top-28 shadow-lg">
+              <div className="p-5 sm:p-8 rounded-3xl bg-white border border-stone-200 space-y-6 sticky top-28 shadow-lg">
                 <h3 className="font-serif text-xl font-bold text-stone-900 border-b border-stone-100 pb-4">
                   Order Summary
                 </h3>

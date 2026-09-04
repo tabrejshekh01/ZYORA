@@ -283,7 +283,7 @@ export default function SellerDashboardPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex space-x-4 border-b border-stone-200 mb-8">
+        <div className="flex space-x-4 border-b border-stone-200 mb-8 overflow-x-auto no-scrollbar whitespace-nowrap pb-px">
           {[
             { id: 'PRODUCTS', label: `My Products (${store?.products?.length || 0})` },
             { id: 'ORDERS', label: `Orders Fulfillment (${orders.length})` },
@@ -292,7 +292,7 @@ export default function SellerDashboardPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`pb-4 text-xs font-mono font-bold uppercase tracking-wider transition relative ${
+              className={`pb-4 text-xs font-mono font-bold uppercase tracking-wider transition relative flex-shrink-0 ${
                 activeTab === tab.id ? 'text-gold-700 border-b-2 border-gold-600' : 'text-stone-500 hover:text-stone-800'
               }`}
             >
@@ -488,7 +488,7 @@ export default function SellerDashboardPage() {
       {/* Add Product Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-stone-200 rounded-3xl max-w-lg w-full p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-stone-200 rounded-3xl max-w-lg w-full p-5 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-stone-100 pb-4">
               <h3 className="font-serif text-xl font-bold text-stone-900">Add New Garment (₹ INR)</h3>
               <button onClick={() => setShowAddModal(false)} className="text-stone-400 hover:text-stone-900">
@@ -646,7 +646,7 @@ export default function SellerDashboardPage() {
       {/* Edit Product Modal */}
       {editingProduct && (
         <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-stone-200 rounded-3xl max-w-lg w-full p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-stone-200 rounded-3xl max-w-lg w-full p-5 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-stone-100 pb-4">
               <h3 className="font-serif text-xl font-bold text-stone-900">Edit Garment Details</h3>
               <button onClick={() => setEditingProduct(null)} className="text-stone-400 hover:text-stone-900">

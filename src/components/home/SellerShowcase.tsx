@@ -65,23 +65,27 @@ export default function SellerShowcase() {
                   <img
                     src={store.banner}
                     alt={store.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.9]"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-stone-900/60 via-transparent to-transparent" />
                 </div>
 
                 {/* Store Content */}
-                <div className="p-6 relative z-10 -mt-12 flex flex-col justify-between">
+                <div className="p-4 sm:p-6 relative z-10 -mt-12 flex flex-col justify-between">
                   <div className="flex items-end justify-between mb-4">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4">
                       <img
                         src={store.logo}
                         alt={store.name}
-                        className="w-16 h-16 rounded-2xl border-2 border-white object-cover bg-white shadow-lg"
+                        loading="lazy"
+                        decoding="async"
+                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-white object-cover bg-white shadow-lg flex-shrink-0"
                       />
                       <div>
                         <div className="flex items-center space-x-1.5">
-                          <h3 className="font-serif text-2xl font-bold text-stone-900 group-hover:text-gold-700 transition">
+                          <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900 group-hover:text-gold-700 transition">
                             {store.name}
                           </h3>
                           <CheckCircle2 className="w-4 h-4 text-gold-600 fill-gold-100" />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
 export interface CartItem {
   id: string;
@@ -32,23 +32,36 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const isInitialized = useRef(false);
 
+  // Safely load cart from localStorage once on client mount
   useEffect(() => {
-    const saved = localStorage.getItem('zyora_cart');
-    if (saved) {
-      try {
-        setCart(JSON.parse(saved));
-      } catch (e) {
-        console.error('Error loading cart', e);
+    try {
+      const saved = localStorage.getItem('zyora_cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setCart(parsed);
+        }
       }
+    } catch (e) {
+      console.error('Error loading cart from localStorage', e);
+    } finally {
+      isInitialized.current = true;
     }
   }, []);
 
+  // Save to localStorage only after initialization has completed
   useEffect(() => {
-    localStorage.setItem('zyora_cart', JSON.stringify(cart));
+    if (!isInitialized.current) return;
+    try {
+      localStorage.setItem('zyora_cart', JSON.stringify(cart));
+    } catch (e) {
+      console.error('Error saving cart to localStorage', e);
+    }
   }, [cart]);
 
-  const addToCart = (newItem: Omit<CartItem, 'id'>) => {
+  const addToCart = useCallback((newItem: Omit<CartItem, 'id'>) => {
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex(
         (i) =>
@@ -67,13 +80,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...prevCart, { ...newItem, id }];
     });
     setIsCartOpen(true);
-  };
+  }, []);
 
-  const removeFromCart = (id: string) => {
+  const removeFromCart = useCallback((id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
-  };
+  }, []);
 
-  const updateQuantity = (id: string, delta: number) => {
+  const updateQuantity = useCallback((id: string, delta: number) => {
     setCart((prev) =>
       prev
         .map((item) => {
@@ -85,32 +98,38 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         })
         .filter(Boolean) as CartItem[]
     );
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCart([]);
-  };
+  }, []);
 
-  const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-  return (
-    <CartContext.Provider
-      value={{
-        cart,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        totalAmount,
-        itemCount,
-        isCartOpen,
-        setIsCartOpen,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
+  const totalAmount = useMemo(
+    () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [cart]
   );
+
+  const itemCount = useMemo(
+    () => cart.reduce((sum, item) => sum + item.quantity, 0),
+    [cart]
+  );
+
+  const contextValue = useMemo(
+    () => ({
+      cart,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      totalAmount,
+      itemCount,
+      isCartOpen,
+      setIsCartOpen,
+    }),
+    [cart, addToCart, removeFromCart, updateQuantity, clearCart, totalAmount, itemCount, isCartOpen]
+  );
+
+  return <CartContext.Provider value={contextValue}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
@@ -120,4 +139,3 @@ export function useCart() {
   }
   return context;
 }
-

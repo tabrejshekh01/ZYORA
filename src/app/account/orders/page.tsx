@@ -69,7 +69,7 @@ export default function CustomerOrdersPage() {
               {orders.map((order) => (
                 <div
                   key={order.id}
-                  className="p-8 rounded-3xl bg-white border border-stone-200 space-y-6 shadow-sm hover:shadow-md transition"
+                  className="p-5 sm:p-8 rounded-3xl bg-white border border-stone-200 space-y-6 shadow-sm hover:shadow-md transition"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-stone-100 pb-4 gap-2">
                     <div>
@@ -81,7 +81,7 @@ export default function CustomerOrdersPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center space-x-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       {/* Payment Status Badge */}
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-mono font-bold border inline-flex items-center space-x-1 ${
@@ -176,7 +176,7 @@ export default function CustomerOrdersPage() {
       {/* Order Details Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-stone-200 rounded-3xl max-w-xl w-full p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-stone-200 rounded-3xl max-w-xl w-full p-5 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-stone-100 pb-4">
               <div>
                 <span className="text-[10px] font-mono uppercase text-gold-700 font-bold tracking-widest block">

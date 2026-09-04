@@ -48,16 +48,18 @@ export default function VendorStorefrontPage({ params }: { params: { slug: strin
 
       {/* Store Header Info */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10 pb-16">
-        <div className="p-8 rounded-3xl bg-white border border-stone-200 backdrop-blur-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center space-x-6">
+        <div className="p-5 sm:p-8 rounded-3xl bg-white border border-stone-200 backdrop-blur-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
             <img
               src={store?.logo || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=400&auto=format&fit=crop'}
               alt={store?.name || 'Store Logo'}
-              className="w-24 h-24 rounded-2xl border-2 border-white object-cover bg-white shadow-md"
+              loading="lazy"
+              decoding="async"
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white object-cover bg-white shadow-md flex-shrink-0"
             />
             <div>
               <div className="flex items-center space-x-2">
-                <h1 className="font-serif text-3xl font-bold text-stone-900">
+                <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900">
                   {store?.name || 'Designer Store'}
                 </h1>
                 <CheckCircle2 className="w-5 h-5 text-gold-600 fill-gold-100" />
@@ -74,7 +76,7 @@ export default function VendorStorefrontPage({ params }: { params: { slug: strin
             </div>
           </div>
 
-          <div className="flex flex-col items-end justify-center space-y-2 border-t md:border-t-0 md:border-l border-stone-200 pt-4 md:pt-0 md:pl-8">
+          <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 md:border-l border-stone-200 pt-4 md:pt-0 md:pl-8">
             <div className="flex items-center space-x-1.5 px-4 py-1.5 rounded-full bg-gold-50 border border-gold-200 text-gold-700 text-xs font-mono font-bold">
               <Star className="w-4 h-4 fill-current text-gold-500" />
               <span>{store?.rating || '4.95'} Atelier Rating</span>

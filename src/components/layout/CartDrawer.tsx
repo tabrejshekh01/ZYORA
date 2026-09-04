@@ -29,7 +29,7 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white border-l border-stone-200 z-50 flex flex-col shadow-2xl backdrop-blur-3xl"
+            className="fixed top-0 right-0 bottom-0 w-full max-w-full sm:max-w-md bg-white border-l border-stone-200 z-50 flex flex-col shadow-2xl backdrop-blur-3xl"
           >
             {/* Drawer Header */}
             <div className="p-6 border-b border-stone-100 flex items-center justify-between">
@@ -79,6 +79,8 @@ export default function CartDrawer() {
                     <img
                       src={item.image}
                       alt={item.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-20 h-24 object-cover rounded-xl bg-stone-100 border border-stone-200"
                     />
                     <div className="flex-1 flex flex-col justify-between">

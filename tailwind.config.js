@@ -12,7 +12,7 @@ module.exports = {
         gold: {
           50: '#fbf8ee',
           100: '#f6eed6',
-          200: '#eddcaa border',
+          200: '#eddcaa',
           300: '#e0c47b',
           400: '#d4af37', // Luxury Royal Gold
           500: '#c5a059', // Champagne Gold Accent

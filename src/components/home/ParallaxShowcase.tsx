@@ -1,21 +1,35 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Sparkles, ArrowUpRight, Crown, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ParallaxShowcase() {
   const containerRef = useRef<HTMLDivElement>(null);
-  
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkIsDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    checkIsDesktop();
+    window.addEventListener('resize', checkIsDesktop, { passive: true });
+    return () => window.removeEventListener('resize', checkIsDesktop);
+  }, []);
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start end', 'end start'],
   });
 
-  const yColumn1 = useTransform(scrollYProgress, [0, 1], [50, -80]);
-  const yColumn2 = useTransform(scrollYProgress, [0, 1], [-70, 90]);
-  const yColumn3 = useTransform(scrollYProgress, [0, 1], [80, -60]);
+  const yColumn1Raw = useTransform(scrollYProgress, [0, 1], [40, -60]);
+  const yColumn2Raw = useTransform(scrollYProgress, [0, 1], [-50, 60]);
+  const yColumn3Raw = useTransform(scrollYProgress, [0, 1], [60, -40]);
+
+  const y1 = isDesktop ? yColumn1Raw : 0;
+  const y2 = isDesktop ? yColumn2Raw : 0;
+  const y3 = isDesktop ? yColumn3Raw : 0;
 
   return (
     <section
@@ -46,17 +60,19 @@ export default function ParallaxShowcase() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
           
           {/* Column 1 */}
-          <motion.div style={{ y: yColumn1 }} className="space-y-8">
+          <motion.div style={{ y: y1 }} className="space-y-8">
             <div className="group relative rounded-3xl overflow-hidden bg-white border border-stone-200/80 shadow-xl transition duration-500 hover:border-gold-400">
-              <div className="h-96 overflow-hidden relative bg-stone-100">
+              <div className="h-80 sm:h-96 overflow-hidden relative bg-stone-100">
                 <img
                   src="https://images.unsplash.com/photo-1539533018447-63fcce2678e3?q=80&w=800&auto=format&fit=crop"
                   alt="Cashmere Trench Coat"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 filter contrast-[1.02]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               </div>
-              <div className="p-6 relative z-10 -mt-16 backdrop-blur-xl bg-white/95 m-4 rounded-2xl border border-stone-200 shadow-lg">
+              <div className="p-6 relative z-10 -mt-16 backdrop-blur-xl bg-white/95 m-3 sm:m-4 rounded-2xl border border-stone-200 shadow-lg">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-gold-700">
                   Atelier Noir
                 </span>
@@ -90,17 +106,19 @@ export default function ParallaxShowcase() {
           </motion.div>
 
           {/* Column 2 */}
-          <motion.div style={{ y: yColumn2 }} className="space-y-8">
+          <motion.div style={{ y: y2 }} className="space-y-8">
             <div className="group relative rounded-3xl overflow-hidden bg-white border border-stone-200/80 shadow-xl transition duration-500 hover:border-gold-400">
-              <div className="h-[440px] overflow-hidden relative bg-stone-100">
+              <div className="h-[360px] sm:h-[440px] overflow-hidden relative bg-stone-100">
                 <img
                   src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop"
                   alt="Haute Couture Gown"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 filter contrast-[1.02]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               </div>
-              <div className="p-6 relative z-10 -mt-16 backdrop-blur-xl bg-white/95 m-4 rounded-2xl border border-stone-200 shadow-lg">
+              <div className="p-6 relative z-10 -mt-16 backdrop-blur-xl bg-white/95 m-3 sm:m-4 rounded-2xl border border-stone-200 shadow-lg">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-gold-700">
                   Haute Couture
                 </span>
@@ -124,17 +142,19 @@ export default function ParallaxShowcase() {
           </motion.div>
 
           {/* Column 3 */}
-          <motion.div style={{ y: yColumn3 }} className="space-y-8">
+          <motion.div style={{ y: y3 }} className="space-y-8">
             <div className="group relative rounded-3xl overflow-hidden bg-white border border-stone-200/80 shadow-xl transition duration-500 hover:border-gold-400">
-              <div className="h-96 overflow-hidden relative bg-stone-100">
+              <div className="h-80 sm:h-96 overflow-hidden relative bg-stone-100">
                 <img
                   src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=800&auto=format&fit=crop"
                   alt="Streetwear Hoodie"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 filter contrast-[1.02]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               </div>
-              <div className="p-6 relative z-10 -mt-16 backdrop-blur-xl bg-white/95 m-4 rounded-2xl border border-stone-200 shadow-lg">
+              <div className="p-6 relative z-10 -mt-16 backdrop-blur-xl bg-white/95 m-3 sm:m-4 rounded-2xl border border-stone-200 shadow-lg">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-gold-700">
                   Vogue Urban
                 </span>

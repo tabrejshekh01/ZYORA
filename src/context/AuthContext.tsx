@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 export interface User {
   id: string;
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const res = await fetch('/api/auth/me');
       if (res.ok) {
@@ -44,20 +44,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkAuth();
+  }, [checkAuth]);
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.error('Logout error', e);
+    } finally {
+      setUser(null);
+      window.location.href = '/';
+    }
   }, []);
 
-  const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
-    window.location.href = '/';
-  };
+  const contextValue = useMemo(
+    () => ({ user, setUser, loading, logout, checkAuth }),
+    [user, loading, logout, checkAuth]
+  );
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, logout, checkAuth }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
@@ -70,4 +80,3 @@ export function useAuth() {
   }
   return context;
 }
-

@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 import { prisma } from '../prisma';
-import { getOTPProvider, hashOTP } from './provider';
+import { getOTPProvider, hashOTP, normalizeIndianMobile } from './provider';
 
-const RESEND_COOLDOWN_SECONDS = 60;
+const RESEND_COOLDOWN_SECONDS = 30;
 const OTP_EXPIRY_MINUTES = 5;
 const MAX_VERIFY_ATTEMPTS = 5;
 
@@ -10,7 +10,6 @@ export interface SendOTPResult {
   success: boolean;
   message: string;
   cooldownSeconds?: number;
-  devCode?: string; // only populated in development mock mode
 }
 
 export interface VerifyOTPResult {
@@ -22,40 +21,53 @@ export interface VerifyOTPResult {
 }
 
 /**
- * Normalizes identifier (email or phone)
+ * Normalizes identifier (email or Indian mobile phone)
  */
-export function normalizeIdentifier(input: string): { identifier: string; type: 'email' | 'phone' } {
+export function normalizeIdentifier(input: string): {
+  identifier: string;
+  type: 'email' | 'phone';
+  isValid: boolean;
+  national10?: string;
+} {
   const trimmed = input.trim();
   if (trimmed.includes('@')) {
-    return { identifier: trimmed.toLowerCase(), type: 'email' };
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return {
+      identifier: trimmed.toLowerCase(),
+      type: 'email',
+      isValid: emailRegex.test(trimmed),
+    };
   }
-  // Strip non-numeric characters for phone
-  const cleanPhone = trimmed.replace(/\s+/g, '').replace(/[-()]/g, '');
-  return { identifier: cleanPhone, type: 'phone' };
+
+  // Treat as Indian mobile phone
+  const norm = normalizeIndianMobile(trimmed);
+  return {
+    identifier: norm.normalized,
+    type: 'phone',
+    isValid: norm.isValid,
+    national10: norm.national10,
+  };
 }
 
 /**
- * Sends a secure 6-digit OTP to the specified identifier
+ * Sends a secure 6-digit WhatsApp OTP to the specified mobile phone number (or email)
  */
 export async function sendOTP(rawIdentifier: string): Promise<SendOTPResult> {
-  const { identifier, type } = normalizeIdentifier(rawIdentifier);
+  const { identifier, type, isValid } = normalizeIdentifier(rawIdentifier);
 
-  if (type === 'email') {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(identifier)) {
+  if (!isValid) {
+    if (type === 'email') {
       return { success: false, message: 'Please provide a valid email address.' };
     }
-  } else {
-    // Phone validation (at least 10 digits)
-    const phoneDigits = identifier.replace(/\D/g, '');
-    if (phoneDigits.length < 10) {
-      return { success: false, message: 'Please provide a valid 10-digit mobile number.' };
-    }
+    return {
+      success: false,
+      message: 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.',
+    };
   }
 
   const now = new Date();
 
-  // 1. Check Resend Cooldown
+  // 1. Check Resend Cooldown (30 seconds)
   const recentOTP = await prisma.oTPVerification.findFirst({
     where: {
       identifier,
@@ -68,22 +80,22 @@ export async function sendOTP(rawIdentifier: string): Promise<SendOTPResult> {
 
   if (recentOTP) {
     const elapsedSeconds = Math.floor((now.getTime() - recentOTP.createdAt.getTime()) / 1000);
-    const waitTime = RESEND_COOLDOWN_SECONDS - elapsedSeconds;
+    const waitTime = Math.max(1, RESEND_COOLDOWN_SECONDS - elapsedSeconds);
     return {
       success: false,
-      message: `Please wait ${waitTime} seconds before requesting a new code.`,
+      message: `Please wait ${waitTime}s before requesting a new OTP.`,
       cooldownSeconds: waitTime,
     };
   }
 
-  // 2. Invalidate any existing active OTPs for this identifier
+  // 2. Invalidate any previous active OTPs for this identifier
   await prisma.oTPVerification.updateMany({
     where: {
       identifier,
       verified: false,
     },
     data: {
-      verified: true, // effectively invalidates
+      verified: true,
     },
   });
 
@@ -92,10 +104,12 @@ export async function sendOTP(rawIdentifier: string): Promise<SendOTPResult> {
   const otpHash = hashOTP(rawOtp, identifier);
   const expiresAt = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
-  // 4. Store Hash in PostgreSQL
+  // 4. Store Hash in PostgreSQL (No plaintext OTP in database)
   await prisma.oTPVerification.create({
     data: {
       identifier,
+      phone: type === 'phone' ? identifier : null,
+      channel: type === 'phone' ? 'whatsapp' : 'email',
       otpHash,
       expiresAt,
       maxAttempts: MAX_VERIFY_ATTEMPTS,
@@ -104,24 +118,25 @@ export async function sendOTP(rawIdentifier: string): Promise<SendOTPResult> {
     },
   });
 
-  // 5. Dispatch OTP via Provider
-  const provider = getOTPProvider();
-  const dispatchResult = await provider.sendOTP(identifier, rawOtp, type);
+  // 5. Dispatch OTP via WhatsApp / Provider
+  const provider = getOTPProvider(type === 'phone' ? 'whatsapp' : 'email');
+  const dispatchResult = await provider.sendOTP(
+    identifier,
+    rawOtp,
+    type === 'phone' ? 'whatsapp' : 'email'
+  );
 
   if (!dispatchResult.success) {
     return {
       success: false,
-      message: dispatchResult.error || 'Failed to dispatch verification code. Please try again.',
+      message: dispatchResult.error || 'Failed to dispatch WhatsApp OTP. Please try again.',
     };
   }
 
-  const isDev = (process.env.NODE_ENV !== 'production' || process.env.ALLOW_MOCK_OTP === 'true') && provider.name === 'mock';
-
   return {
     success: true,
-    message: `Verification code sent to ${identifier}.`,
+    message: dispatchResult.message || 'OTP sent to your WhatsApp.',
     cooldownSeconds: RESEND_COOLDOWN_SECONDS,
-    devCode: isDev ? rawOtp : undefined,
   };
 }
 
@@ -133,11 +148,22 @@ export async function verifyOTP(
   rawOtp: string,
   optionalRole: 'CUSTOMER' | 'SELLER' = 'CUSTOMER'
 ): Promise<VerifyOTPResult> {
-  const { identifier } = normalizeIdentifier(rawIdentifier);
+  const { identifier, type, isValid, national10 } = normalizeIdentifier(rawIdentifier);
+
+  if (!isValid) {
+    return {
+      success: false,
+      message:
+        type === 'email'
+          ? 'Please enter a valid email address.'
+          : 'Please enter a valid 10-digit mobile number.',
+    };
+  }
+
   const cleanOtp = rawOtp.trim();
 
   if (cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
-    return { success: false, message: 'Please enter a valid 6-digit verification code.' };
+    return { success: false, message: 'Invalid OTP. Please enter the 6-digit code.' };
   }
 
   const now = new Date();
@@ -152,25 +178,37 @@ export async function verifyOTP(
   });
 
   if (!record) {
-    return { success: false, message: 'Invalid or expired verification code. Please request a new one.' };
+    return {
+      success: false,
+      message: 'Invalid OTP. Please try again.',
+    };
   }
 
-  // 2. Check Expiration
+  // 2. Check Expiration (5 minutes)
   if (now > record.expiresAt) {
-    return { success: false, message: 'Verification code has expired. Please request a new one.' };
+    return {
+      success: false,
+      message: 'This OTP has expired. Please request a new one.',
+    };
   }
 
-  // 3. Check Attempt Lockout
+  // 3. Check Attempt Lockout (max 5 attempts)
   if (record.attempts >= record.maxAttempts) {
-    return { success: false, message: 'Maximum verification attempts exceeded. Please request a new code.' };
+    return {
+      success: false,
+      message: 'Too many attempts. Please request a new OTP later.',
+    };
   }
 
-  // 4. Verify Hash
+  // 4. Verify Hash with Timing-Safe Comparison
   const expectedHash = hashOTP(cleanOtp, identifier);
-  const isMatch = crypto.timingSafeEqual(Buffer.from(expectedHash), Buffer.from(record.otpHash));
+  const isMatch = crypto.timingSafeEqual(
+    Buffer.from(expectedHash),
+    Buffer.from(record.otpHash)
+  );
 
   if (!isMatch) {
-    // Increment attempts
+    // Increment failed attempts
     const updated = await prisma.oTPVerification.update({
       where: { id: record.id },
       data: { attempts: { increment: 1 } },
@@ -178,50 +216,81 @@ export async function verifyOTP(
 
     const remaining = record.maxAttempts - updated.attempts;
     if (remaining <= 0) {
-      return { success: false, message: 'Too many incorrect attempts. This code has been invalidated.' };
+      return {
+        success: false,
+        message: 'Too many attempts. Please request a new OTP later.',
+      };
     }
 
     return {
       success: false,
-      message: `Invalid code. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`,
+      message: `Invalid OTP. Please try again. (${remaining} attempt${remaining > 1 ? 's' : ''} left)`,
     };
   }
 
-  // 5. Invalidate OTP Immediately
+  // 5. Mark OTP as verified and record timestamp
   await prisma.oTPVerification.update({
     where: { id: record.id },
-    data: { verified: true },
+    data: {
+      verified: true,
+      usedAt: new Date(),
+    },
   });
 
   // 6. User Lookup or Provisioning
-  let user = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: identifier }, { phone: identifier }],
-    },
-    include: { store: true },
-  });
+  let user: any = null;
+
+  if (type === 'phone' && national10) {
+    user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { phone: identifier },
+          { phone: national10 },
+          { phone: `+91 ${national10.slice(0, 5)} ${national10.slice(5)}` },
+          { phone: `+91${national10}` },
+          { email: `${national10}@phone.zyora.internal` },
+          { email: `${identifier}@phone.zyora.internal` },
+        ],
+      },
+      include: { store: true },
+    });
+  } else {
+    user = await prisma.user.findFirst({
+      where: { email: identifier },
+      include: { store: true },
+    });
+  }
 
   let isNewUser = false;
 
   if (!user) {
     isNewUser = true;
     const randomPassword = crypto.randomBytes(24).toString('hex');
-    const isEmail = identifier.includes('@');
 
-    const defaultName = isEmail
-      ? identifier.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ')
-      : `Client ${identifier.slice(-4)}`;
-
-    user = await prisma.user.create({
-      data: {
-        name: defaultName.charAt(0).toUpperCase() + defaultName.slice(1),
-        email: isEmail ? identifier : `${identifier}@phone.zyora.internal`,
-        phone: isEmail ? null : identifier,
-        password: randomPassword, // Nonce password (auth via OTP or reset)
-        role: optionalRole,
-      },
-      include: { store: true },
-    });
+    if (type === 'phone' && national10) {
+      user = await prisma.user.create({
+        data: {
+          name: `Client ${national10.slice(-4)}`,
+          email: `${national10}@phone.zyora.internal`,
+          phone: identifier,
+          password: randomPassword,
+          role: optionalRole,
+        },
+        include: { store: true },
+      });
+    } else {
+      const defaultName = identifier.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
+      user = await prisma.user.create({
+        data: {
+          name: defaultName.charAt(0).toUpperCase() + defaultName.slice(1),
+          email: identifier,
+          phone: null,
+          password: randomPassword,
+          role: optionalRole,
+        },
+        include: { store: true },
+      });
+    }
   }
 
   return {
@@ -232,4 +301,3 @@ export async function verifyOTP(
     userId: user.id,
   };
 }
-

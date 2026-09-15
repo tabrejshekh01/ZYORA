@@ -22,18 +22,18 @@ export async function POST(request: Request) {
 
     if (!identifier || typeof identifier !== 'string' || identifier.trim().length < 3) {
       return NextResponse.json(
-        { error: 'Valid mobile number or email address is required.' },
+        { error: 'Please enter a valid 10-digit Indian mobile number.' },
         { status: 400 }
       );
     }
 
-    const cleanIdentifier = identifier.trim().toLowerCase();
+    const cleanIdentifier = identifier.trim();
 
     // 2. Identifier Rate Limiting (Defense against targeted spam)
-    const targetRateLimit = await checkRateLimit(`otp_send_target_${cleanIdentifier}`, 3, 60);
+    const targetRateLimit = await checkRateLimit(`otp_send_target_${cleanIdentifier.toLowerCase()}`, 3, 60);
     if (!targetRateLimit.success) {
       return NextResponse.json(
-        { error: 'Too many requests for this mobile/email. Please wait 1 minute before trying again.' },
+        { error: 'Too many requests for this mobile number. Please wait 1 minute before trying again.' },
         { status: 429 }
       );
     }
@@ -51,8 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: result.message,
-      cooldownSeconds: result.cooldownSeconds,
-      devCode: result.devCode, // Only populated in non-production mock mode
+      cooldownSeconds: result.cooldownSeconds || 30,
     });
   } catch (error: any) {
     console.error('Error in /api/auth/otp/send:', error?.message);
@@ -62,4 +61,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
